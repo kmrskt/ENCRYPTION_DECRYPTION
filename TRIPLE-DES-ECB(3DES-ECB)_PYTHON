@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+# coding: utf-8
+
+import base64
+import pyDes
+from Crypto.Cipher import DES3
+
+def encrypt_3des(clear_text, key):
+    clear_text_byte = clear_text.encode('utf-8')
+    key_byte = key.encode('utf-8')
+    key_byte = key_byte.ljust(24, "\0".encode('utf-8'))
+    if len(key_byte) > 24:
+        key_byte = key_byte[:24]
+
+    k = pyDes.triple_des(key_byte, pyDes.ECB, IV = None, pad = None, padmode = pyDes.PAD_PKCS5)
+    d = k.encrypt(clear_text_byte)
+
+    return base64.b64encode(d).decode('utf-8')
+
+def encrypt_3des_crypto(clear_text, key):
+    key_byte = key.encode('utf-8')
+    key_byte = key_byte.ljust(24, "\0".encode('utf-8'))
+    if len(key_byte) > 24:
+        key_byte = key_byte[:24]
+
+    # PKCS#5
+    pad_len = 8 - len(clear_text) % 8
+    padding = chr(pad_len) * pad_len
+    clear_text += padding
+
+    cryptor = DES3.new(key_byte, DES3.MODE_ECB)
+    data = cryptor.encrypt(clear_text)
+
+    return base64.b64encode(data).decode('utf-8')
+
+def decrypt_3des(data, key):
+    data_byte = base64.b64decode(data.encode('utf-8'))
+    key_byte = key.encode('utf-8')
+    key_byte = key_byte.ljust(24, "\0".encode('utf-8'))
+    if len(key_byte) > 24:
+        key_byte = key_byte[:24]
+
+    k = pyDes.triple_des(key_byte, pyDes.ECB, IV = None, pad = None, padmode = pyDes.PAD_PKCS5)
+    d = k.decrypt(data_byte)
+
+    return d.decode('utf-8')
+
+def decrypt_3des_crypto(data, key):
+    data_byte = base64.b64decode(data.encode('utf-8'))
+    key_byte = key.encode('utf-8')
+    key_byte = key_byte.ljust(24, "\0".encode('utf-8'))
+    if len(key_byte) > 24:
+        key_byte = key_byte[:24]
+
+    cryptor = DES3.new(key_byte, DES3.MODE_ECB)
+    c_text = cryptor.decrypt(data_byte)
+
+    # PKCS#5
+    pad_len = ord(c_text.decode('utf-8')[-1])
+    clear_text = c_text.decode('utf-8')[:-pad_len]
+
+    return clear_text
+
+def main():
+    clear_text = "BSプレミアム20日放送"
+    key = "SecretKey"
+    data = encrypt_3des(clear_text, key)
+
+    print("Encrypted String: " + data)
+    print(decrypt_3des(data, key))
+
+    data = encrypt_3des_crypto(clear_text, key)
+
+    print("Encrypted String: " + data)
+    print(decrypt_3des_crypto(data, key))
+
+if __name__ == "__main__":
+    main()
+
+TEST COMMAND-
+echo -n "BSプレミアム20日放送" | openssl enc -e -des-ede3 -K "5365637265744B6579000000000000000000000000000000" -nosalt -a
+
+echo "tpGP6UtYB5MLZwFG89V+TEIzM2CB8xMC+AFgZr4sezU=" | openssl enc -d -des-ede3 -K "5365637265744B6579000000000000000000000000000000" -nosalt -a

@@ -1,0 +1,99 @@
+using System;
+using System.Text;
+using System.Security.Cryptography;
+
+namespace AES256
+{
+    class Program
+    {
+        private string encrypt(string clearText, string secretKey, string initVector)
+        {
+            try
+            {
+                AesCryptoServiceProvider aesProvider = new AesCryptoServiceProvider();
+                aesProvider.KeySize = 256;
+                aesProvider.BlockSize = 128;
+                aesProvider.Mode = CipherMode.CBC;
+                aesProvider.Padding = PaddingMode.PKCS7;
+
+                byte[] byteText = Encoding.UTF8.GetBytes(clearText);
+                byte[] byteKey = Encoding.UTF8.GetBytes(secretKey.PadRight(32, '\0'));
+                if (byteKey.Length > 32)
+                {
+                    byte[] bytePass = new byte[32];
+                    Buffer.BlockCopy(byteKey, 0, bytePass, 0, 32);
+                    byteKey = bytePass;
+                }
+                byte[] byteIV = Encoding.UTF8.GetBytes(initVector.PadRight(16, '\0'));
+                if (byteIV.Length > 16)
+                {
+                    byte[] byteInit = new byte[16];
+                    Buffer.BlockCopy(byteIV, 0, byteInit, 0, 16);
+                    byteIV = byteInit;
+                }
+
+                aesProvider.Key = byteKey;
+                aesProvider.IV = byteIV;
+
+                byte[] byteData = aesProvider.CreateEncryptor().TransformFinalBlock(byteText, 0, byteText.Length);
+                return Convert.ToBase64String(byteData);
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+
+        private string decrypt(string data, string secretKey, string initVector)
+        {
+            try
+            {
+                AesCryptoServiceProvider aesProvider = new AesCryptoServiceProvider();
+                aesProvider.KeySize = 256;
+                aesProvider.BlockSize = 128;
+                aesProvider.Mode = CipherMode.CBC;
+                aesProvider.Padding = PaddingMode.PKCS7;
+
+                byte[] byteData = Convert.FromBase64String(data);
+                byte[] byteKey = Encoding.UTF8.GetBytes(secretKey.PadRight(32, '\0'));
+                if (byteKey.Length > 32)
+                {
+                    byte[] bytePass = new byte[32];
+                    Buffer.BlockCopy(byteKey, 0, bytePass, 0, 32);
+                    byteKey = bytePass;
+                }
+                byte[] byteIV = Encoding.UTF8.GetBytes(initVector.PadRight(16, '\0'));
+                if (byteIV.Length > 16)
+                {
+                    byte[] byteInit = new byte[16];
+                    Buffer.BlockCopy(byteIV, 0, byteInit, 0, 16);
+                    byteIV = byteInit;
+                }
+
+                aesProvider.Key = byteKey;
+                aesProvider.IV = byteIV;
+
+                byte[] byteText = aesProvider.CreateDecryptor().TransformFinalBlock(byteData, 0, byteData.Length);
+                return Encoding.UTF8.GetString(byteText);
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+        static void Main(string[] args)
+        {
+            string clearText = "BSプレミアム20日放送";
+            string secretKey = "SecretKey";
+            string initVector = "InitVector";
+
+            string data = new AES256.Program().encrypt(clearText, secretKey, initVector);
+            clearText = new AES256.Program().decrypt(data, secretKey, initVector);
+
+            Console.WriteLine("Encrypted String: " + data);
+            Console.WriteLine(clearText);
+
+            Console.ReadLine();
+        }
+    }
+}

@@ -1,0 +1,22 @@
+<?php
+    function encrypt_3des($clear_text, $key) {
+        $encrypt_text = openssl_encrypt($clear_text, "DES-EDE3", $key, OPENSSL_RAW_DATA, "");
+        $data = base64_encode($encrypt_text);
+
+        return $data;
+    }
+
+    function decrypt_3des($data, $key) {
+        $encrypt_text = base64_decode($data);
+        $clear_text = openssl_decrypt($encrypt_text, "DES-EDE3", $key, OPENSSL_RAW_DATA, "");
+
+        return $clear_text;
+    }
+
+    $clear_text = "BSプレミアム20日放送";
+    $key = "SecretKey";
+    $data = encrypt_3des($clear_text, $key);
+
+    echo "Encrypted String: ".encrypt_3des($clear_text, $key)."\n";
+    echo decrypt_3des($data, $key)."\n";
+?>
